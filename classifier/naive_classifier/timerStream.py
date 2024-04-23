@@ -23,6 +23,8 @@ class TimerStream():
         return sum(stream) / len(stream)
     def get_max_time(self,streamName): 
         return max(self.streams[streamName]) 
+    def get_min_time(self,streamName): 
+        return min(self.streams[streamName]) 
     def format_streamPrint(self,streamName): 
         avg = self.get_average_time(streamName) 
         peak = self.get_max_time(streamName) 
