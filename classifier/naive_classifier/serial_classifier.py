@@ -112,10 +112,10 @@ def process_Stereo(depth,config):
     t.add_time("depth") 
     t.format_streamPrint("depth")
 
-def model_inference(rgb_frame,image_transforms,model,threshold=0.65): 
+def model_inference(rgb_frame,device,image_transforms,model,threshold=0.65): 
     t.set_baseline("inference") 
     img = Image.fromarray(rgb_frame[:,:,[2,1,0]])  
-    tensor = image_transforms(img) 
+    tensor = image_transforms(img).to(device)  
     output = model([tensor]) 
     scores = output[0]['scores'] 
     boxes = output[0]['boxes']  
@@ -148,7 +148,6 @@ def run(args):
     stereo.setDepthAlign(rgbCamSocket) 
     configure_Sync(sync) 
     spatial_config = configure_Spatial(spatial) 
-
 
 
 
@@ -195,6 +194,11 @@ def run(args):
     model = torchvision.models.detection.ssdlite.ssdlite320_mobilenet_v3_large(weights_backbone = "DEFAULT", num_classes=2)
     model.load_state_dict(torch.load(args['weights'])) 
     model.eval() 
+    torch_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {torch_device}")
+    
+
+
 
     image_transforms = transforms.Compose([
         transforms.ColorJitter(brightness = (0.5,1.5), contrast = (0.5,1.5), saturation = (0.5,1.5), hue = (-0.1, 0.1)),
@@ -253,7 +257,7 @@ def run(args):
                 #depth = np.where(depth > 8000, 0, depth)
                 #print(np.min(depth),np.mean(depth), np.max(depth), depth.shape)
                 if counter % 2 == 0:
-                    curr_boxes, curr_scores = model_inference(frame,image_transforms,model,threshold=float(args['threshold']))
+                    curr_boxes, curr_scores = model_inference(frame,torch_device,image_transforms,model,threshold=float(args['threshold']))
                     #some kind of jank logic to figure out if a true detection exists? 
                     if len(curr_boxes) >= 1: 
                         boxes = curr_boxes 
