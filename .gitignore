@@ -4,3 +4,8 @@
 **/o.txt
 *__pycache__
 .vscode
+libs/depthai-core/
+controller/libs/*/src/CMakeCache.txt
+controller/libs/*/src/CMakeFiles
+controller/libs/*/src/Makefile
+controller/libs/*/src/cmake_install.cmake

@@ -1,6 +1,4 @@
-RUN INSTRUCTIONS: 
-Also make sure the git submodules are populated
-TOP LEVEL CMAKE DO CMAKE .. IN A BUILD DIR 
+See the top-level README for build and run instructions.
 
 
 
