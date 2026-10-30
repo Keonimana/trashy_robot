@@ -19,18 +19,18 @@ find_package(cppzmq)
 find_package(Curses REQUIRED)
 
 # Test script for point generation
-# add_executable(
-#     point_generator
-#     src/point_generator.cpp
-# )
-# target_link_libraries(
-#     point_generator
-#     PRIVATE cppzmq ${CMAKE_THREAD_LIBS_INIT}
-# )
-# target_include_directories(
-#     point_generator 
-#     PUBLIC ${PROJECT_SOURCE_DIR}/include
-# ) 
+add_executable(
+    point_generator
+    src/point_generator.cpp
+)
+target_link_libraries(
+    point_generator
+    PRIVATE cppzmq ${CMAKE_THREAD_LIBS_INIT}
+)
+target_include_directories(
+    point_generator 
+    PUBLIC ${PROJECT_SOURCE_DIR}/include
+) 
 
 # Script for command reception
 add_executable(

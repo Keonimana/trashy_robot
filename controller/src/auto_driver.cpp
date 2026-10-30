@@ -1,5 +1,4 @@
 #include "controller.hpp" 
-// #include "motor.hpp"
 
 std::mutex mx;
 Point objective;
@@ -20,14 +19,13 @@ float getDistanceError(Point *trash_pt) {
     // Assuming that we have a point
     float d_error;
 
-    // Get the pixel deviation from screen center
+    // Normalize depth to [0, 1], saturating at SATURATE_DEPTH
     d_error = trash_pt->z;
     d_error = (d_error > SATURATE_DEPTH) ? SATURATE_DEPTH : d_error;
     d_error = d_error / (float) SATURATE_DEPTH;
     return d_error;
 }
 
-// TODO: this should be threaded
 void manuver(zmq::context_t *ctx) {
 
     // Controller variables
@@ -52,7 +50,7 @@ void manuver(zmq::context_t *ctx) {
     float d_integral = 0.0;
     float a_derivative = 0.0;
     float d_derivative = 0.0;
-    float timestep = 0.005;
+    float timestep = 0.05; // Matches the 50 ms loop sleep below
     int integral_steps = 0;
 
     zmq::socket_t publisher(*ctx, zmq::socket_type::pub);
@@ -68,7 +66,9 @@ void manuver(zmq::context_t *ctx) {
         mx.unlock();
 
         if (trash_pt.x <= 0. || trash_pt.y <= 0.) {
-            commandToSend = {0.0, 0.0};
+            // No target in view: stop and center the wheels
+            servo_angle = 0.0;
+            motor_speed = 0.0;
 
         } else {
             a_error = getAngleError(&trash_pt); 
@@ -129,8 +129,13 @@ void poll_objective(zmq::context_t *ctx) {
     colorSubscriber.set(zmq::sockopt::subscribe, "");
 
     zmq::socket_t depthSubscriber(*ctx, zmq::socket_type::sub);
+    depthSubscriber.set(zmq::sockopt::conflate, 1); // Only the newest depth matters
     depthSubscriber.connect("tcp://localhost:5554");
     depthSubscriber.set(zmq::sockopt::subscribe, "");
+
+    // A centroid without a fresh depth reading reuses the last one. Reading 0 here
+    // would look like arrival and stop the car.
+    int latestDepth = 0;
 
     // Run until process is killed
     while (true) {
@@ -142,12 +147,9 @@ void poll_objective(zmq::context_t *ctx) {
 
         zmq::message_t depthMessage;
         if (depthSubscriber.recv(&depthMessage, ZMQ_DONTWAIT)) {
-            int depth;
-            memcpy(&depth, depthMessage.data(), sizeof(int));
-            receivedPoint.z = depth;
+            memcpy(&latestDepth, depthMessage.data(), sizeof(int));
         }
-
-        // std::cout << "Point - x: " << receivedPoint.x << " y: " << receivedPoint.y << " z: " << receivedPoint.z << std::endl;
+        receivedPoint.z = latestDepth;
 
         // Populate shared point for PID loop
         mx.lock();
@@ -168,10 +170,10 @@ int main() {
         objective = {0.0f, 0.0f, 0.0f};
     mx.unlock();
 
-    // Start the PID loop
+    // Start the PID loop and the objective poller
     auto controller = std::async(std::launch::async, manuver, &context);
     auto poller = std::async(std::launch::async, poll_objective, &context);
 
-    // Clean exit condition
+    // The futures block at scope exit, so this runs until the process is killed
     return 0;
 }

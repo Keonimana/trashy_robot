@@ -21,7 +21,7 @@ find_package(Threads)
 find_package(cppzmq)
 find_package(depthai CONFIG REQUIRED)
 
-# Test script for point generation
+# OAK-D Lite RGB and depth publisher
 add_executable(
     camera
     src/camera.cpp

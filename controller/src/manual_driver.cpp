@@ -40,17 +40,13 @@ void cleanup(MotorController* motor) {
 void loop(MotorController* motor) {
 
     char cmd;
-    int motor_speed, turn_angle;
+    int motor_speed;
 
     // Continuously loop through taking commands
     do {
-        // printw("Please choose a cmd: {w - accelerate; s - decelerate; ");
-        // printw("a - turn left; d - turn Right}\n");
-
         cmd = getch();
         refresh();  
 
-        // printw("Command chosen: %c\n", cmd); 
         switch(cmd) {
             case 'w': 
                 motor->stepForwards(); 
@@ -72,9 +68,7 @@ void loop(MotorController* motor) {
                 break;
         }
         motor_speed = motor->getMotorSpeed(); 
-        turn_angle = motor->getServoAngle();
         printw("S: %x  ", motor_speed); 
-        // printw("A: %x  ", turn_angle); 
     }
     while (cmd != 'q');
 } 

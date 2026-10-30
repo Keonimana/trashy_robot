@@ -39,21 +39,19 @@ int main() {
         Command receivedCommand;
         memcpy(&receivedCommand, message.data(), sizeof(Command));
 
-        // std::cout << "Received Command: (" << receivedCommand.angle << ", " << receivedCommand.speed << ")" << std::endl;
-
-        servoAngle = (int) ((receivedCommand.angle / 2.0 + 0.5) * STEERING_RANGE + MIN_STEERING); // Don't remove plus one
+        servoAngle = (int) ((receivedCommand.angle / 2.0 + 0.5) * STEERING_RANGE + MIN_STEERING);
         nextSpeed = (int) (receivedCommand.speed * THROTTLE_RANGE + MIN_THROTTLE);
 
-        motorSum -= speeds[index % AVERAGE_LENGTH];
-        speeds[index % AVERAGE_LENGTH] = nextSpeed;
-        motorSum += speeds[index % AVERAGE_LENGTH];
+        motorSum -= speeds[index];
+        speeds[index] = nextSpeed;
+        motorSum += speeds[index];
         motorSpeed = motorSum / AVERAGE_LENGTH;
 
         std::cout << "Setting Motor Speed: " << motorSpeed << " Servo Angle: " << servoAngle << std::endl;
         motor.setMotorSpeed(motorSpeed, false);
         motor.setServoAngle(servoAngle);
 
-        index = ++index >= AVERAGE_LENGTH ? 0 : index;
+        index = (index + 1) % AVERAGE_LENGTH;
     }
 
     return 0;

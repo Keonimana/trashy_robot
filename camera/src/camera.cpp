@@ -4,7 +4,7 @@ void pub_color(zmq::context_t* context, dai::Device* device) {
 
     // Zmq setup
     zmq::socket_t rgbPublisher(*context, zmq::socket_type::pub);
-    rgbPublisher.bind("tcp://*:5553"); // Bind to port 5555
+    rgbPublisher.bind("tcp://*:5553");
 
     // Stream queues
     auto qRgb = device->getOutputQueue("rgb", 4, false);
@@ -12,7 +12,7 @@ void pub_color(zmq::context_t* context, dai::Device* device) {
     while(true) {
         auto inRgb = qRgb->get<dai::ImgFrame>();
 
-        // Publish frame and depth via zmq
+        // Publish frame via zmq
         cv::Mat image = inRgb->getCvFrame();
         std::vector<uchar> buffer;
         cv::imencode(".jpg", image, buffer);
@@ -28,7 +28,7 @@ void pub_depth(zmq::context_t* context,
 
     // Zmq setup
     zmq::socket_t roiPublisher(*context, zmq::socket_type::pub);
-    roiPublisher.bind("tcp://*:5554"); // Bind to port 5555
+    roiPublisher.bind("tcp://*:5554");
 
     zmq::socket_t roiSubscriber(*context, zmq::socket_type::sub);
     roiSubscriber.connect("tcp://localhost:5555");
@@ -46,39 +46,34 @@ void pub_depth(zmq::context_t* context,
         auto inRoi = qRoi->get<dai::SpatialLocationCalculatorData>()->getSpatialLocations();
         auto inDepth = qDepth->get<dai::ImgFrame>(); // DO NOT DELETE. NECESSARY OR CRASH
 
-        // Display depth as image
-        // auto frame = inDepth->getCvFrame();
-        // cv::imshow("disparity", frame);
-        // int key = cv::waitKey(1);
-        // if(key == 'q' || key == 'Q') {
-        //     return;
-        // }
-
         zmq::message_t objectMessage;
         if (roiSubscriber.recv(&objectMessage, ZMQ_DONTWAIT)) {
             float xmax, ymax, xmin, ymin;
             memcpy(&objective, objectMessage.data(), sizeof(CommandPoint));
-            
-            xmin = objective.x / 300.0 - 0.05; // Keep box big to manage motion blurring
-            xmin = xmin < 0 ? 0 : xmin;
 
-            xmax = objective.x / 300.0 + 0.05;
-            xmax = xmax > 1 ? 1 : xmax;
+            // No target in view: keep the last ROI, since (-1, -1) has no valid box
+            if (objective.x >= 0 && objective.y >= 0) {
+                xmin = objective.x / 300.0 - 0.05; // Keep box big to manage motion blurring
+                xmin = xmin < 0 ? 0 : xmin;
 
-            ymin = objective.y / 300.0 - 0.05;
-            ymin = ymin < 0 ? 0 : ymin;
+                xmax = objective.x / 300.0 + 0.05;
+                xmax = xmax > 1 ? 1 : xmax;
 
-            ymax = objective.y / 300.0 + 0.05;
-            ymax = ymax > 1 ? 1 : ymax;
+                ymin = objective.y / 300.0 - 0.05;
+                ymin = ymin < 0 ? 0 : ymin;
 
-            dai::Point2f topLeft(xmin, ymin);
-            dai::Point2f bottomRight(xmax, ymax); 
+                ymax = objective.y / 300.0 + 0.05;
+                ymax = ymax > 1 ? 1 : ymax;
 
-            config->roi = dai::Rect(topLeft, bottomRight);
-            config->calculationAlgorithm = dai::SpatialLocationCalculatorAlgorithm::MIN;
-            dai::SpatialLocationCalculatorConfig cfg;
-            cfg.addROI(*config);
-            qConfig->send(cfg);
+                dai::Point2f topLeft(xmin, ymin);
+                dai::Point2f bottomRight(xmax, ymax); 
+
+                config->roi = dai::Rect(topLeft, bottomRight);
+                config->calculationAlgorithm = dai::SpatialLocationCalculatorAlgorithm::MIN;
+                dai::SpatialLocationCalculatorConfig cfg;
+                cfg.addROI(*config);
+                qConfig->send(cfg);
+            }
         }
 
         auto endPtr = std::end(inRoi);
@@ -188,10 +183,10 @@ int main() {
 
     std::cout << "Starting!" << std::endl;
 
-    // Start the PID loop
+    // Start the publishers
     auto color = std::async(std::launch::async, pub_color, &context, &device);
     auto depth = std::async(std::launch::async, pub_depth, &context, &device, &config);
 
-    // Clean exit condition
+    // The futures block at scope exit, so this runs until the process is killed
     return 0;
 }

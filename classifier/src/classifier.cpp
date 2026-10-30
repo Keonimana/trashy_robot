@@ -10,7 +10,6 @@ int main() {
 
     Scalar lowerBound(160, 50, 50); 
     Scalar upperBound(180, 255, 255); 
-    Rect boundingBox;
 
     zmq::context_t context(1);
 
@@ -31,6 +30,9 @@ int main() {
         const char* messageData = static_cast<const char*>(imageMessage.data());
         vector<uchar> imageData(messageData, messageData + imageMessage.size());
         image = imdecode(imageData, IMREAD_COLOR);
+        if (image.empty()) {
+            continue;
+        }
 
         // Convert to HSV
         cvtColor(image, hsvImage, COLOR_BGR2HSV);
@@ -51,8 +53,6 @@ int main() {
             }
         }
 
-        // std::cout << "Area: " << maxArea << std::endl;
-
         // Find center of object in frame
         Point2f centerPoint(-1, -1);
 
@@ -60,22 +60,10 @@ int main() {
             Moments moments = cv::moments(contours[largestContourIndex]);
             if (moments.m00 > 0) {
                 centerPoint = Point2f(static_cast<float>(moments.m10 / moments.m00), static_cast<float>(moments.m01 / moments.m00));
-                // boundingBox = boundingRect(contours[largestContourIndex]);
             }
         }
 
-        // Display frame
-        // if (centerPoint.x != -1 && centerPoint.y != -1) {
-        //     rectangle(image, boundingBox, Scalar(0, 255, 0), 2);
-        //     circle(image, centerPoint, 5, Scalar(0, 255, 0), -1);
-        // }
-        // imshow("Object Detection", image);
-        // int key = waitKey(1);
-        // if (key == 'q') break;
-
         CommandPoint objective = {centerPoint.x, centerPoint.y, 0.0};
-
-        // cout << "Center - x: " << objective.x << " y: " << objective.y << endl;
 
         zmq::message_t msg(sizeof(CommandPoint));
         memcpy(msg.data(), &objective, sizeof(CommandPoint));

@@ -8,9 +8,6 @@
 #define MOTOR_START 0X0cc
 #define MAX_THROTTLE 0x125
 #define MIN_THROTTLE 0X108
-// #define MAX_THROTTLE 0x110     // 0x150
-// #define MIN_STEERING 0x020
-// #define MAX_STEERING 0x080
 #define MIN_STEERING 0x0d5
 #define MAX_STEERING 0x148
 #define THROTTLE_RANGE (MAX_THROTTLE - MIN_THROTTLE)
@@ -25,8 +22,7 @@
 #define SERVO_CHANNEL 16
 #define MOTOR_CHANNEL 15
 
-//Store internally as 12 bit resolution
-// Class to manipulate rc car motor speed
+// Class to manipulate rc car motor speed. Stores PWM values at 12 bit resolution
 class MotorController{
     public: 
         // Controller Object to change Motor PWM

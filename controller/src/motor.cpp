@@ -61,8 +61,8 @@ int MotorController::stepBackwards() {
     return 0;
 }
 
-int MotorController::stepLeft() { // TODO: Double check how this is working
-     s_angle -= INCREMENT; 
+int MotorController::stepLeft() {
+    s_angle -= INCREMENT; 
     s_angle = (s_angle < MIN_STEERING) ? MIN_STEERING : s_angle;
 
     pca->setPWM(servo, s_angle); 

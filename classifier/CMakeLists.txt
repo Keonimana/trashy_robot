@@ -12,7 +12,7 @@ add_custom_target(cleanup
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/bin
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/CMakeFiles
     COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/cmake_install.cmake
-    COMMAND ${CMAKE_COMMAND} -E /remove ${CMAKE_BINARY_DIR}/Makefile
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/Makefile
     COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/CMakeCache.txt
     COMMENT "Cleaning build artifacts"
 )
@@ -21,7 +21,7 @@ find_package(Threads)
 find_package(cppzmq)
 find_package(OpenCV REQUIRED)
 
-# Test script for point generation
+# HSV color detector
 add_executable(
     classifier
     src/classifier.cpp
